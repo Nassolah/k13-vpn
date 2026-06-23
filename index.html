@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>K13 VPN</title>
+    <!-- Официальный скрипт Telegram Mini Apps -->
+    <script src="https://telegram.org"></script>
+    <style>
+        /* Базовые стили приложения K13 VPN */
+        :root {
+            --bg-main: #071408;
+            --bg-sheet: #0d0f0d;
+            --bg-card: #121512;
+            --accent-neon: #26d017;
+            --accent-glow: #39ff14;
+            --text-muted: #8a998b;
+            --border-color: rgba(38, 208, 23, 0.15);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-main);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Навигационная панель (Заголовок как на скринах) */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(7, 20, 8, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-back-nav {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--accent-neon);
+            font-size: 18px;
+        }
+
+        .nav-title-container {
+            flex: 1;
+            text-align: center;
+            margin-right: 36px; /* Баланс для центрирования */
+        }
+
+        .nav-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .nav-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 2px 0 0 0;
+        }
+
+        /* Экраны приложения */
+        .page {
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+            padding-bottom: 30px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* --- ГЛАВНЫЙ ЭКРАН --- */
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 0;
+        }
+
+        .logo-container img {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(38, 208, 23, 0.4);
+            border: 2px solid var(--accent-neon);
+        }
+
+        .bottom-sheet {
+            background: var(--bg-sheet);
+            width: 100%;
+            border-radius: 32px 32px 0 0;
+            padding: 24px 16px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tariff-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .card {
+            flex: 1;
+            background: var(--bg-card);
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .card-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        /* Универсальные кнопки */
+        .btn-block-primary {
+            background: var(--accent-neon);
+            color: #ffffff;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 15px rgba(38, 208, 23, 0.25);
+            text-decoration: none;
+        }
+
+        .btn-block-secondary {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(38, 208, 23, 0.25);
+            padding: 15px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* --- ЭКРАН ПОШАГОВОЙ НАСТРОЙКИ --- */
+        .step-wizard {
+            padding: 20px 16px;
+        }
+
+        /* Полоса прогресса 1 - 2 - 3 */
+        .progress-bar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .progress-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            width: 60%;
+            z-index: 1;
+        }
+
+        .progress-line-fill {
+            position: absolute;
+            height: 2px;
+            background: var(--accent-neon);
+            width: 0%;
+            left: 20%;
+            z-index: 2;
+            transition: width 0.3s ease;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 3;
+            margin: 0 25px;
+            transition: all 0.3s ease;
+        }
+
+        .step-circle.active {
+            background: var(--accent-neon);
+            border-color: var(--accent-neon);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(38, 208, 23, 0.4);
+        }
+
+        .step-circle.completed {
+            background: var(--accent-neon);
+            border-color: var(--accent-neon);
+            color: #ffffff;
+        }
+
+        .wizard-title {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 0 6px 0;
+        }
+
+        .wizard-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+
+        /* Сетка платформ Телефон / ПК / ТВ */
+        .platform-grid {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .platform-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px 8px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .platform-card.selected {
+            border-color: var(--accent-neon);
+            background: rgba(38, 208, 23, 0.04);
+        }
+
+        .badge-your {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e0a900;
+            color: #000000;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+
+        .platform-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .platform-name {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Список выбора под-устройств (ТВ / Смартфоны) */
+        .selection-list-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .list-item-select {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item-select.selected {
+            border-color: var(--accent-neon);
+            background: rgba(38, 208, 23, 0.03);
+        }
+
+        /* Кастомный радио-кружок как на скрине */
+        .radio-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .list-item-select.selected .radio-dot {
+            border-color: var(--accent-neon);
+        }
+
+        .list-item-select.selected .radio-dot::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background: var(--accent-neon);
+            border-radius: 50%;
+        }
+
+        /* Шаг 2: Выбор клиента */
+        .client-info-box {
+            background: var(--bg-card);
+            border: 1px solid var(--accent-neon);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge-rec {
